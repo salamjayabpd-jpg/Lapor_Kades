@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAPOR KADES – Portal Pengaduan Desa</title>
+<style>
+:root{--g:#0f766e;--bg:#f4f7f6;--t:#16302b}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--g);color:#fff;padding:40px 20px;text-align:center}
+header h1{margin:0 0 6px}header p{margin:0;opacity:.9}
+main{max-width:720px;margin:-24px auto 40px;padding:0 16px}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px #0001}
+h2{margin-top:0;font-size:1.1rem}
+input,select,textarea{width:100%;padding:10px;margin:6px 0;border:1px solid #cbd5d1;border-radius:8px;font:inherit}
+button,.btn{background:var(--g);color:#fff;border:0;padding:11px 18px;border-radius:8px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+.wa{background:#25d366}#hasil{margin-top:10px;white-space:pre-line}
+footer{text-align:center;font-size:.85rem;padding:20px;color:#5b706b}
+</style></head><body>
+<header><h1>LAPOR KADES</h1><p>Layanan Pengaduan Desa • <span id="desa">Pemerintah Desa</span></p></header>
+<main>
+<div class="card"><h2>Lapor via WhatsApp</h2>
+<p>Kirim laporan, foto, dan lokasi langsung ke nomor resmi layanan.</p>
+<a class="btn wa" id="wa" target="_blank" rel="noopener">Hubungi WhatsApp</a></div>
+
+<div class="card"><h2>Formulir Pengaduan Alternatif</h2>
+<input id="nama" placeholder="Nama Anda"><input id="nowa" placeholder="Nomor WhatsApp (628xxx)" inputmode="numeric">
+<select id="kat"></select><input id="lok" placeholder="Lokasi kejadian (mis. Dusun 2 RT 03)">
+<textarea id="isi" rows="4" placeholder="Uraian pengaduan"></textarea>
+<button onclick="kirim()">Kirim Laporan</button><div id="hk"></div></div>
+
+<div class="card"><h2>Cek Status Laporan</h2>
+<input id="tiket" placeholder="LK-2026-0001"><button onclick="cek()">Cek Status</button><div id="hasil"></div></div>
+
+<div class="card"><h2>Prosedur</h2><ol><li>Kirim laporan via WhatsApp atau formulir.</li><li>Dapatkan nomor tiket.</li><li>Petugas memverifikasi dan menindaklanjuti.</li><li>Pantau status dengan nomor tiket.</li></ol></div>
+</main>
+<footer>Digital Desa | Solusi Digital untuk Desa Modern | AVNET.ID</footer>
+<script>
+const API='GANTI_URL_WEB_APP_APPS_SCRIPT', WA_NUM='62812xxxxxxx', NAMA_DESA='Desa Contoh';
+document.getElementById('wa').href='https://wa.me/'+WA_NUM+'?text=MENU';
+document.getElementById('desa').textContent='Pemerintah '+NAMA_DESA;
+const $=i=>document.getElementById(i);
+const call=o=>fetch(API,{method:'POST',body:JSON.stringify(o)}).then(r=>r.json());
+call({action:'kategori'}).then(r=>{$('kat').innerHTML=(r.data||[]).map(k=>`<option>${k}</option>`).join('')});
+async function kirim(){
+  $('hk').textContent='Mengirim...';
+  const r=await call({action:'kirim',nama:$('nama').value,wa:$('nowa').value,kategori:$('kat').value,lokasi:$('lok').value,isi:$('isi').value});
+  $('hk').textContent=r.ok?'Laporan tercatat. Nomor tiket: '+r.id:(r.msg||'Gagal');
+}
+async function cek(){
+  $('hasil').textContent='Mencari...';
+  const r=await call({action:'cek',id:$('tiket').value.trim()});
+  if(!r.ok){$('hasil').textContent=r.msg;return}
+  const d=r.data;$('hasil').textContent=`Tiket: ${d.id}\nKategori: ${d.kategori}\nLokasi: ${d.lokasi}\nStatus: ${d.status}`+(d.tindak?`\nTindak lanjut: ${d.tindak}`:'');
+}
+</script></body></html>
