@@ -63,16 +63,38 @@ const API='https://script.google.com/macros/s/AKfycbwScjkx6y-Zs7o-_JNMhRnjqLfLno
 const $=i=>document.getElementById(i);let T=localStorage.getItem('lk_t'),D=[],ST=[],cur=null;
 const call=o=>fetch(API,{method:'POST',body:JSON.stringify({...o,token:T})}).then(r=>r.json());
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-async function login(){const r=await call({action:'login',username:$('u').value,password:$('p').value});
- if(!r.ok){$('le').textContent=r.msg;return}T=r.token;localStorage.setItem('lk_t',T);localStorage.setItem('lk_n',r.nama);start()}
-function logout(){localStorage.clear();location.reload()}
+
+function showLogin(msg){
+  localStorage.removeItem('lk_t');localStorage.removeItem('lk_n');T=null;
+  $('app').style.display='none';$('login').style.display='flex';
+  $('le').textContent=msg||'';
+}
+function logout(){showLogin()}
+
+async function login(){
+  $('le').textContent='Memproses...';
+  try{
+    const r=await call({action:'login',username:$('u').value,password:$('p').value});
+    if(!r.ok){$('le').textContent=r.msg;return}
+    T=r.token;localStorage.setItem('lk_t',T);localStorage.setItem('lk_n',r.nama);start();
+  }catch(e){$('le').textContent='Tidak dapat terhubung ke server. Periksa URL API.'}
+}
+
 function start(){$('login').style.display='none';$('app').style.display='block';$('nm').textContent=localStorage.getItem('lk_n')||'';load()}
-async function load(){const r=await call({action:'list'});if(!r.ok){if(r.auth===0)logout();return}
- D=r.data;ST=r.status;
- $('fs').innerHTML='<option value="">Semua status</option>'+ST.map(s=>`<option>${s}</option>`).join('');
- $('ms').innerHTML=ST.map(s=>`<option>${s}</option>`).join('');
- $('mp').innerHTML='<option value="">-</option>'+r.petugas.map(s=>`<option>${esc(s)}</option>`).join('');render()}
-function render(){charts();
+
+async function load(){
+  let r;
+  try{r=await call({action:'list'})}
+  catch(e){showLogin('Tidak dapat terhubung ke server. Periksa URL API.');return}
+  if(!r.ok){showLogin(r.msg||'Sesi berakhir');return}
+  D=r.data;ST=r.status;
+  $('fs').innerHTML='<option value="">Semua status</option>'+ST.map(s=>`<option>${s}</option>`).join('');
+  $('ms').innerHTML=ST.map(s=>`<option>${s}</option>`).join('');
+  $('mp').innerHTML='<option value="">-</option>'+r.petugas.map(s=>`<option>${esc(s)}</option>`).join('');
+  render();
+}
+function start(){$('login').style.display='none';$('app').style.display='block';$('nm').textContent=localStorage.getItem('lk_n')||'';load()}
+
  const today=new Date().toISOString().slice(0,10),q=$('q').value.toLowerCase(),f=$('fs').value;
  $('s1').textContent=D.length;$('s2').textContent=D.filter(d=>String(d.Tanggal_Lapor).startsWith(today)).length;
  $('s3').textContent=D.filter(d=>d.Status==='Menunggu Verifikasi').length;$('s4').textContent=D.filter(d=>d.Status==='Selesai').length;
